@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movable & Resizable Chess Board</title>
+    <title>Movable Chess Game vs AI</title>
     <style>
         * {
             margin: 0;
@@ -18,17 +18,13 @@
             overflow: hidden;
         }
 
-        /* 
-         * CONTAINER - The main movable/resizable box
-         * Customize initial position with 'left' and 'top'
-         * Customize initial size with 'width' and 'height'
-         */
+        /* Main container - movable/resizable */
         #chess-container {
             position: absolute;
-            left: 50px;  /* Initial X position */
-            top: 50px;   /* Initial Y position */
-            width: 600px;  /* Initial width */
-            height: 700px; /* Initial height (increased for URL input) */
+            left: 50px;
+            top: 50px;
+            width: 600px;
+            height: 700px;
             background: white;
             border-radius: 8px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
@@ -37,9 +33,7 @@
             flex-direction: column;
         }
 
-        /* 
-         * DRAG HANDLE - Top bar for moving the container
-         */
+        /* Drag handle */
         #drag-handle {
             background: #2c3e50;
             color: white;
@@ -55,107 +49,120 @@
             background: #34495e;
         }
 
-        /* 
-         * URL INPUT SECTION
-         */
-        #url-section {
+        /* Game info section */
+        #game-info {
             background: #ecf0f1;
-            padding: 10px;
+            padding: 12px;
             border-bottom: 2px solid #bdc3c7;
             display: flex;
-            gap: 8px;
+            justify-content: space-between;
             align-items: center;
         }
 
-        #url-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 2px solid #95a5a6;
-            border-radius: 4px;
-            font-size: 14px;
-            font-family: monospace;
+        #status {
+            font-weight: bold;
+            color: #2c3e50;
         }
 
-        #url-input:focus {
-            outline: none;
-            border-color: #3498db;
+        #controls {
+            display: flex;
+            gap: 8px;
         }
 
-        #load-btn {
-            padding: 8px 20px;
+        .btn {
+            padding: 6px 14px;
             background: #3498db;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             transition: background 0.2s;
         }
 
-        #load-btn:hover {
+        .btn:hover {
             background: #2980b9;
         }
 
-        #load-btn:active {
+        .btn:active {
             transform: scale(0.98);
         }
 
-        /* Quick links */
-        #quick-links {
-            background: #f8f9fa;
-            padding: 8px 10px;
-            border-bottom: 1px solid #dee2e6;
-            font-size: 12px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .quick-link {
-            color: #3498db;
-            text-decoration: none;
-            cursor: pointer;
-            padding: 2px 6px;
-            border-radius: 3px;
-            transition: background 0.2s;
-        }
-
-        .quick-link:hover {
-            background: #e3f2fd;
-            text-decoration: underline;
-        }
-
-        /* 
-         * IFRAME - The chess board
-         * This will automatically fill the remaining space
-         */
-        #chess-iframe {
+        /* Chess board container */
+        #board-container {
             flex: 1;
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #f8f9fa;
         }
 
-        /* Loading indicator */
-        #loading {
-            display: none;
+        /* Chess board */
+        #chess-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            aspect-ratio: 1;
+            max-width: 100%;
+            max-height: 100%;
+            border: 3px solid #2c3e50;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(24px, 5vw, 48px);
+            cursor: pointer;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .light {
+            background: #f0d9b5;
+        }
+
+        .dark {
+            background: #b58863;
+        }
+
+        .selected {
+            background: #7fc97f !important;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .valid-move {
+            position: relative;
+        }
+
+        .valid-move::after {
+            content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 20px 40px;
-            border-radius: 8px;
-            font-size: 16px;
-            z-index: 10;
+            width: 25%;
+            height: 25%;
+            background: rgba(0, 128, 0, 0.5);
+            border-radius: 50%;
         }
 
-        /* 
-         * RESIZE HANDLES - Eight handles for resizing from all directions
-         */
+        .square:hover {
+            filter: brightness(0.9);
+        }
+
+        /* Captured pieces */
+        #captured {
+            padding: 10px;
+            background: #fff;
+            border-top: 2px solid #bdc3c7;
+            font-size: 14px;
+        }
+
+        .captured-section {
+            margin: 5px 0;
+        }
+
+        /* Resize handles */
         .resize-handle {
             position: absolute;
             background: rgba(52, 152, 219, 0.5);
@@ -167,116 +174,41 @@
             background: rgba(52, 152, 219, 0.8);
         }
 
-        /* Corner handles */
-        .resize-nw {
-            top: 0;
-            left: 0;
-            width: 15px;
-            height: 15px;
-            cursor: nw-resize;
-        }
-
-        .resize-ne {
-            top: 0;
-            right: 0;
-            width: 15px;
-            height: 15px;
-            cursor: ne-resize;
-        }
-
-        .resize-sw {
-            bottom: 0;
-            left: 0;
-            width: 15px;
-            height: 15px;
-            cursor: sw-resize;
-        }
-
-        .resize-se {
-            bottom: 0;
-            right: 0;
-            width: 15px;
-            height: 15px;
-            cursor: se-resize;
-        }
-
-        /* Edge handles */
-        .resize-n {
-            top: 0;
-            left: 15px;
-            right: 15px;
-            height: 8px;
-            cursor: n-resize;
-        }
-
-        .resize-s {
-            bottom: 0;
-            left: 15px;
-            right: 15px;
-            height: 8px;
-            cursor: s-resize;
-        }
-
-        .resize-w {
-            left: 0;
-            top: 15px;
-            bottom: 15px;
-            width: 8px;
-            cursor: w-resize;
-        }
-
-        .resize-e {
-            right: 0;
-            top: 15px;
-            bottom: 15px;
-            width: 8px;
-            cursor: e-resize;
-        }
+        .resize-nw { top: 0; left: 0; width: 15px; height: 15px; cursor: nw-resize; }
+        .resize-ne { top: 0; right: 0; width: 15px; height: 15px; cursor: ne-resize; }
+        .resize-sw { bottom: 0; left: 0; width: 15px; height: 15px; cursor: sw-resize; }
+        .resize-se { bottom: 0; right: 0; width: 15px; height: 15px; cursor: se-resize; }
+        .resize-n { top: 0; left: 15px; right: 15px; height: 8px; cursor: n-resize; }
+        .resize-s { bottom: 0; left: 15px; right: 15px; height: 8px; cursor: s-resize; }
+        .resize-w { left: 0; top: 15px; bottom: 15px; width: 8px; cursor: w-resize; }
+        .resize-e { right: 0; top: 15px; bottom: 15px; width: 8px; cursor: e-resize; }
     </style>
 </head>
 <body>
-    <!-- Main container that can be moved and resized -->
     <div id="chess-container">
-        <!-- Drag handle bar -->
-        <div id="drag-handle">🎯 Drag me to move | Resize from edges/corners</div>
+        <div id="drag-handle">🎯 Drag me to move | Resize from edges/corners - Chess vs AI</div>
         
-        <!-- URL input section -->
-        <div id="url-section">
-            <input 
-                type="text" 
-                id="url-input" 
-                placeholder="Enter Chess.com URL (e.g., https://www.chess.com/play/computer)" 
-                value="https://www.chess.com/play/computer"
-            />
-            <button id="load-btn">Load</button>
+        <div id="game-info">
+            <div id="status">Your turn (White)</div>
+            <div id="controls">
+                <button class="btn" onclick="newGame()">New Game</button>
+                <button class="btn" onclick="undoMove()">Undo</button>
+            </div>
         </div>
 
-        <!-- Quick links -->
-        <div id="quick-links">
-            <strong>Quick:</strong>
-            <a class="quick-link" data-url="https://www.chess.com/play/computer">vs Computer</a>
-            <a class="quick-link" data-url="https://www.chess.com/play/online">vs Player</a>
-            <a class="quick-link" data-url="https://www.chess.com/puzzles">Puzzles</a>
-            <a class="quick-link" data-url="https://www.chess.com/analysis">Analysis</a>
-            <a class="quick-link" data-url="https://www.chess.com/daily-chess-puzzle">Daily Puzzle</a>
-            <a class="quick-link" data-url="https://lichess.org">Lichess</a>
+        <div id="board-container">
+            <div id="chess-board"></div>
         </div>
 
-        <!-- Loading indicator -->
-        <div id="loading">Loading...</div>
-        
-        <!-- 
-            CHESS IFRAME
-            This will load whatever URL you enter in the input box
-        -->
-        <iframe 
-            id="chess-iframe" 
-            src="https://www.chess.com/game/"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-            allowfullscreen>
-        </iframe>
+        <div id="captured">
+            <div class="captured-section">
+                <strong>You captured:</strong> <span id="white-captured"></span>
+            </div>
+            <div class="captured-section">
+                <strong>AI captured:</strong> <span id="black-captured"></span>
+            </div>
+        </div>
 
-        <!-- Resize handles (8 directions) -->
         <div class="resize-handle resize-nw"></div>
         <div class="resize-handle resize-ne"></div>
         <div class="resize-handle resize-sw"></div>
@@ -288,88 +220,413 @@
     </div>
 
     <script>
-        // Get DOM elements
+        // Chess pieces (Unicode symbols)
+        const pieces = {
+            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+            'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+        };
+
+        // Initial board setup
+        let board = [
+            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+        ];
+
+        let selectedSquare = null;
+        let currentPlayer = 'white';
+        let whiteCaptured = [];
+        let blackCaptured = [];
+        let moveHistory = [];
+
+        // Initialize board
+        function initBoard() {
+            const boardEl = document.getElementById('chess-board');
+            boardEl.innerHTML = '';
+            
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = 'square ' + ((row + col) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+                    square.onclick = () => handleSquareClick(row, col);
+                    
+                    const piece = board[row][col];
+                    if (piece) {
+                        square.textContent = pieces[piece];
+                    }
+                    
+                    boardEl.appendChild(square);
+                }
+            }
+            updateCaptured();
+        }
+
+        function handleSquareClick(row, col) {
+            if (currentPlayer !== 'white') return;
+
+            const piece = board[row][col];
+            
+            if (selectedSquare) {
+                const [fromRow, fromCol] = selectedSquare;
+                
+                if (row === fromRow && col === fromCol) {
+                    selectedSquare = null;
+                    clearHighlights();
+                    return;
+                }
+                
+                if (isValidMove(fromRow, fromCol, row, col)) {
+                    makeMove(fromRow, fromCol, row, col);
+                    selectedSquare = null;
+                    clearHighlights();
+                    
+                    if (!isGameOver()) {
+                        currentPlayer = 'black';
+                        updateStatus();
+                        setTimeout(aiMove, 500);
+                    }
+                } else if (piece && isWhitePiece(piece)) {
+                    selectSquare(row, col);
+                }
+            } else if (piece && isWhitePiece(piece)) {
+                selectSquare(row, col);
+            }
+        }
+
+        function selectSquare(row, col) {
+            selectedSquare = [row, col];
+            clearHighlights();
+            
+            const squares = document.querySelectorAll('.square');
+            const index = row * 8 + col;
+            squares[index].classList.add('selected');
+            
+            highlightValidMoves(row, col);
+        }
+
+        function highlightValidMoves(row, col) {
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (isValidMove(row, col, r, c)) {
+                        const squares = document.querySelectorAll('.square');
+                        squares[r * 8 + c].classList.add('valid-move');
+                    }
+                }
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.square').forEach(sq => {
+                sq.classList.remove('selected', 'valid-move');
+            });
+        }
+
+        function isWhitePiece(piece) {
+            return piece === piece.toUpperCase();
+        }
+
+        function isBlackPiece(piece) {
+            return piece === piece.toLowerCase() && piece !== '';
+        }
+
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            const piece = board[fromRow][fromCol];
+            const target = board[toRow][toCol];
+            
+            if (!piece) return false;
+            if (isWhitePiece(piece) && target && isWhitePiece(target)) return false;
+            if (isBlackPiece(piece) && target && isBlackPiece(target)) return false;
+            
+            const pieceLower = piece.toLowerCase();
+            
+            switch (pieceLower) {
+                case 'p': return isValidPawnMove(fromRow, fromCol, toRow, toCol, piece);
+                case 'r': return isValidRookMove(fromRow, fromCol, toRow, toCol);
+                case 'n': return isValidKnightMove(fromRow, fromCol, toRow, toCol);
+                case 'b': return isValidBishopMove(fromRow, fromCol, toRow, toCol);
+                case 'q': return isValidQueenMove(fromRow, fromCol, toRow, toCol);
+                case 'k': return isValidKingMove(fromRow, fromCol, toRow, toCol);
+            }
+            
+            return false;
+        }
+
+        function isValidPawnMove(fromRow, fromCol, toRow, toCol, piece) {
+            const direction = isWhitePiece(piece) ? -1 : 1;
+            const startRow = isWhitePiece(piece) ? 6 : 1;
+            const target = board[toRow][toCol];
+            
+            // Move forward one square
+            if (toCol === fromCol && toRow === fromRow + direction && !target) {
+                return true;
+            }
+            
+            // Move forward two squares from start
+            if (toCol === fromCol && fromRow === startRow && toRow === fromRow + 2 * direction && 
+                !target && !board[fromRow + direction][fromCol]) {
+                return true;
+            }
+            
+            // Capture diagonally
+            if (Math.abs(toCol - fromCol) === 1 && toRow === fromRow + direction && target &&
+                ((isWhitePiece(piece) && isBlackPiece(target)) || 
+                 (isBlackPiece(piece) && isWhitePiece(target)))) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        function isValidRookMove(fromRow, fromCol, toRow, toCol) {
+            if (fromRow !== toRow && fromCol !== toCol) return false;
+            return !isPathBlocked(fromRow, fromCol, toRow, toCol);
+        }
+
+        function isValidKnightMove(fromRow, fromCol, toRow, toCol) {
+            const rowDiff = Math.abs(toRow - fromRow);
+            const colDiff = Math.abs(toCol - fromCol);
+            return (rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2);
+        }
+
+        function isValidBishopMove(fromRow, fromCol, toRow, toCol) {
+            if (Math.abs(toRow - fromRow) !== Math.abs(toCol - fromCol)) return false;
+            return !isPathBlocked(fromRow, fromCol, toRow, toCol);
+        }
+
+        function isValidQueenMove(fromRow, fromCol, toRow, toCol) {
+            return isValidRookMove(fromRow, fromCol, toRow, toCol) || 
+                   isValidBishopMove(fromRow, fromCol, toRow, toCol);
+        }
+
+        function isValidKingMove(fromRow, fromCol, toRow, toCol) {
+            return Math.abs(toRow - fromRow) <= 1 && Math.abs(toCol - fromCol) <= 1;
+        }
+
+        function isPathBlocked(fromRow, fromCol, toRow, toCol) {
+            const rowStep = toRow > fromRow ? 1 : toRow < fromRow ? -1 : 0;
+            const colStep = toCol > fromCol ? 1 : toCol < fromCol ? -1 : 0;
+            
+            let row = fromRow + rowStep;
+            let col = fromCol + colStep;
+            
+            while (row !== toRow || col !== toCol) {
+                if (board[row][col]) return true;
+                row += rowStep;
+                col += colStep;
+            }
+            
+            return false;
+        }
+
+        function makeMove(fromRow, fromCol, toRow, toCol) {
+            const piece = board[fromRow][fromCol];
+            const captured = board[toRow][toCol];
+            
+            moveHistory.push({
+                from: [fromRow, fromCol],
+                to: [toRow, toCol],
+                piece: piece,
+                captured: captured
+            });
+            
+            if (captured) {
+                if (isWhitePiece(piece)) {
+                    whiteCaptured.push(captured);
+                } else {
+                    blackCaptured.push(captured);
+                }
+            }
+            
+            board[toRow][toCol] = piece;
+            board[fromRow][fromCol] = '';
+            
+            initBoard();
+        }
+
+        // AI Move using statistical/common opening moves and basic strategy
+        function aiMove() {
+            const moves = getAllValidMoves('black');
+            if (moves.length === 0) {
+                updateStatus('Checkmate! You win!');
+                return;
+            }
+            
+            // Prioritize moves based on common chess principles
+            let bestMove = null;
+            let bestScore = -Infinity;
+            
+            for (const move of moves) {
+                let score = 0;
+                const piece = board[move.from[0]][move.from[1]];
+                const target = board[move.to[0]][move.to[1]];
+                
+                // Capture pieces (prioritize high-value pieces)
+                if (target) {
+                    const values = { 'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 9, 'K': 100 };
+                    score += values[target.toUpperCase()] * 10;
+                }
+                
+                // Control center squares
+                if ((move.to[0] === 3 || move.to[0] === 4) && 
+                    (move.to[1] === 3 || move.to[1] === 4)) {
+                    score += 5;
+                }
+                
+                // Develop pieces (knights and bishops early)
+                if ((piece === 'n' || piece === 'b') && move.from[0] === 0) {
+                    score += 3;
+                }
+                
+                // Move pawns forward
+                if (piece === 'p') {
+                    score += (7 - move.to[0]);
+                }
+                
+                // Add randomness for variety
+                score += Math.random() * 2;
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+            }
+            
+            if (bestMove) {
+                makeMove(bestMove.from[0], bestMove.from[1], bestMove.to[0], bestMove.to[1]);
+                currentPlayer = 'white';
+                updateStatus();
+                
+                if (isGameOver()) {
+                    updateStatus('Checkmate! AI wins!');
+                }
+            }
+        }
+
+        function getAllValidMoves(player) {
+            const moves = [];
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = board[row][col];
+                    if (!piece) continue;
+                    
+                    if ((player === 'white' && isWhitePiece(piece)) ||
+                        (player === 'black' && isBlackPiece(piece))) {
+                        for (let toRow = 0; toRow < 8; toRow++) {
+                            for (let toCol = 0; toCol < 8; toCol++) {
+                                if (isValidMove(row, col, toRow, toCol)) {
+                                    moves.push({
+                                        from: [row, col],
+                                        to: [toRow, toCol]
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function isGameOver() {
+            // Simple check: if king is captured
+            let whiteKing = false, blackKing = false;
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (board[row][col] === 'K') whiteKing = true;
+                    if (board[row][col] === 'k') blackKing = true;
+                }
+            }
+            return !whiteKing || !blackKing;
+        }
+
+        function updateStatus(msg) {
+            const status = document.getElementById('status');
+            if (msg) {
+                status.textContent = msg;
+            } else {
+                status.textContent = currentPlayer === 'white' ? 'Your turn (White)' : 'AI thinking...';
+            }
+        }
+
+        function updateCaptured() {
+            document.getElementById('white-captured').textContent = 
+                whiteCaptured.map(p => pieces[p]).join(' ') || 'None';
+            document.getElementById('black-captured').textContent = 
+                blackCaptured.map(p => pieces[p]).join(' ') || 'None';
+        }
+
+        function newGame() {
+            board = [
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+            ];
+            selectedSquare = null;
+            currentPlayer = 'white';
+            whiteCaptured = [];
+            blackCaptured = [];
+            moveHistory = [];
+            initBoard();
+            updateStatus();
+        }
+
+        function undoMove() {
+            if (moveHistory.length === 0) return;
+            
+            // Undo AI move
+            if (moveHistory.length > 0) {
+                const lastMove = moveHistory.pop();
+                board[lastMove.from[0]][lastMove.from[1]] = lastMove.piece;
+                board[lastMove.to[0]][lastMove.to[1]] = lastMove.captured || '';
+                if (lastMove.captured) {
+                    blackCaptured.pop();
+                }
+            }
+            
+            // Undo player move
+            if (moveHistory.length > 0) {
+                const lastMove = moveHistory.pop();
+                board[lastMove.from[0]][lastMove.from[1]] = lastMove.piece;
+                board[lastMove.to[0]][lastMove.to[1]] = lastMove.captured || '';
+                if (lastMove.captured) {
+                    whiteCaptured.pop();
+                }
+            }
+            
+            currentPlayer = 'white';
+            initBoard();
+            updateStatus();
+        }
+
+        // Drag and resize functionality
         const container = document.getElementById('chess-container');
         const dragHandle = document.getElementById('drag-handle');
         const resizeHandles = document.querySelectorAll('.resize-handle');
-        const urlInput = document.getElementById('url-input');
-        const loadBtn = document.getElementById('load-btn');
-        const chessIframe = document.getElementById('chess-iframe');
-        const loading = document.getElementById('loading');
-        const quickLinks = document.querySelectorAll('.quick-link');
 
-        // State variables for dragging
         let isDragging = false;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let containerStartX = 0;
-        let containerStartY = 0;
-
-        // State variables for resizing
         let isResizing = false;
+        let dragStartX = 0, dragStartY = 0;
+        let containerStartX = 0, containerStartY = 0;
         let resizeDirection = '';
-        let resizeStartX = 0;
-        let resizeStartY = 0;
-        let containerStartWidth = 0;
-        let containerStartHeight = 0;
-        let containerStartLeft = 0;
-        let containerStartTop = 0;
+        let resizeStartX = 0, resizeStartY = 0;
+        let containerStartWidth = 0, containerStartHeight = 0;
+        let containerStartLeft = 0, containerStartTop = 0;
 
-        // Minimum container size (prevents it from becoming too small)
-        const MIN_WIDTH = 300;
-        const MIN_HEIGHT = 300;
+        const MIN_WIDTH = 400;
+        const MIN_HEIGHT = 500;
 
-        /* 
-         * LOAD URL FUNCTION
-         */
-        function loadURL(url) {
-            if (!url) {
-                alert('Please enter a URL');
-                return;
-            }
-
-            // Basic URL validation
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url;
-            }
-
-            // Show loading indicator
-            loading.style.display = 'block';
-
-            // Load the URL
-            chessIframe.src = url;
-            urlInput.value = url;
-
-            // Hide loading after a delay
-            setTimeout(() => {
-                loading.style.display = 'none';
-            }, 1500);
-        }
-
-        // Load button click
-        loadBtn.addEventListener('click', () => {
-            loadURL(urlInput.value);
-        });
-
-        // Enter key in input
-        urlInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                loadURL(urlInput.value);
-            }
-        });
-
-        // Quick links
-        quickLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const url = link.getAttribute('data-url');
-                loadURL(url);
-            });
-        });
-
-        /* 
-         * DRAGGING FUNCTIONALITY
-         */
         dragHandle.addEventListener('mousedown', (e) => {
             isDragging = true;
             dragStartX = e.clientX;
@@ -379,9 +636,6 @@
             e.preventDefault();
         });
 
-        /* 
-         * RESIZING FUNCTIONALITY
-         */
         resizeHandles.forEach(handle => {
             handle.addEventListener('mousedown', (e) => {
                 isResizing = true;
@@ -397,55 +651,37 @@
             });
         });
 
-        /* 
-         * MOUSE MOVE - Handle both dragging and resizing
-         */
         document.addEventListener('mousemove', (e) => {
             if (isDragging) {
-                // Calculate new position
                 const deltaX = e.clientX - dragStartX;
                 const deltaY = e.clientY - dragStartY;
-                const newLeft = containerStartX + deltaX;
-                const newTop = containerStartY + deltaY;
-
-                // Keep container within viewport bounds
-                const maxLeft = window.innerWidth - container.offsetWidth;
-                const maxTop = window.innerHeight - container.offsetHeight;
-
-                container.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + 'px';
-                container.style.top = Math.max(0, Math.min(newTop, maxTop)) + 'px';
+                container.style.left = Math.max(0, containerStartX + deltaX) + 'px';
+                container.style.top = Math.max(0, containerStartY + deltaY) + 'px';
             }
 
             if (isResizing) {
                 const deltaX = e.clientX - resizeStartX;
                 const deltaY = e.clientY - resizeStartY;
-
                 let newWidth = containerStartWidth;
                 let newHeight = containerStartHeight;
                 let newLeft = containerStartLeft;
                 let newTop = containerStartTop;
 
-                // Handle resizing based on direction
                 if (resizeDirection.includes('e')) {
                     newWidth = Math.max(MIN_WIDTH, containerStartWidth + deltaX);
                 }
                 if (resizeDirection.includes('w')) {
                     newWidth = Math.max(MIN_WIDTH, containerStartWidth - deltaX);
-                    if (newWidth > MIN_WIDTH) {
-                        newLeft = containerStartLeft + deltaX;
-                    }
+                    if (newWidth > MIN_WIDTH) newLeft = containerStartLeft + deltaX;
                 }
                 if (resizeDirection.includes('s')) {
                     newHeight = Math.max(MIN_HEIGHT, containerStartHeight + deltaY);
                 }
                 if (resizeDirection.includes('n')) {
                     newHeight = Math.max(MIN_HEIGHT, containerStartHeight - deltaY);
-                    if (newHeight > MIN_HEIGHT) {
-                        newTop = containerStartTop + deltaY;
-                    }
+                    if (newHeight > MIN_HEIGHT) newTop = containerStartTop + deltaY;
                 }
 
-                // Apply new dimensions and position
                 container.style.width = newWidth + 'px';
                 container.style.height = newHeight + 'px';
                 container.style.left = newLeft + 'px';
@@ -453,25 +689,14 @@
             }
         });
 
-        /* 
-         * MOUSE UP - Stop dragging/resizing
-         */
         document.addEventListener('mouseup', () => {
             isDragging = false;
             isResizing = false;
         });
 
-        // Prevent text selection while dragging
-        document.addEventListener('selectstart', (e) => {
-            if (isDragging || isResizing) {
-                e.preventDefault();
-            }
-        });
-
-        // Handle iframe load event
-        chessIframe.addEventListener('load', () => {
-            loading.style.display = 'none';
-        });
+        // Initialize the game
+        initBoard();
+        updateStatus();
     </script>
 </body>
 </html>
