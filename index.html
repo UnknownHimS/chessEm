@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movable & Resizable Chess Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 
+         * CONTAINER - The main movable/resizable box
+         * Customize initial position with 'left' and 'top'
+         * Customize initial size with 'width' and 'height'
+         */
+        #chess-container {
+            position: absolute;
+            left: 50px;  /* Initial X position */
+            top: 50px;   /* Initial Y position */
+            width: 600px;  /* Initial width */
+            height: 700px; /* Initial height (increased for URL input) */
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 
+         * DRAG HANDLE - Top bar for moving the container
+         */
+        #drag-handle {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            cursor: move;
+            font-weight: bold;
+            text-align: center;
+            user-select: none;
+            border-bottom: 2px solid #34495e;
+        }
+
+        #drag-handle:hover {
+            background: #34495e;
+        }
+
+        /* 
+         * URL INPUT SECTION
+         */
+        #url-section {
+            background: #ecf0f1;
+            padding: 10px;
+            border-bottom: 2px solid #bdc3c7;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #url-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #95a5a6;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: monospace;
+        }
+
+        #url-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        #load-btn {
+            padding: 8px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        #load-btn:hover {
+            background: #2980b9;
+        }
+
+        #load-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Quick links */
+        #quick-links {
+            background: #f8f9fa;
+            padding: 8px 10px;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-link {
+            color: #3498db;
+            text-decoration: none;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+
+        .quick-link:hover {
+            background: #e3f2fd;
+            text-decoration: underline;
+        }
+
+        /* 
+         * IFRAME - The chess board
+         * This will automatically fill the remaining space
+         */
+        #chess-iframe {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* Loading indicator */
+        #loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            z-index: 10;
+        }
+
+        /* 
+         * RESIZE HANDLES - Eight handles for resizing from all directions
+         */
+        .resize-handle {
+            position: absolute;
+            background: rgba(52, 152, 219, 0.5);
+            transition: background 0.2s;
+            z-index: 5;
+        }
+
+        .resize-handle:hover {
+            background: rgba(52, 152, 219, 0.8);
+        }
+
+        /* Corner handles */
+        .resize-nw {
+            top: 0;
+            left: 0;
+            width: 15px;
+            height: 15px;
+            cursor: nw-resize;
+        }
+
+        .resize-ne {
+            top: 0;
+            right: 0;
+            width: 15px;
+            height: 15px;
+            cursor: ne-resize;
+        }
+
+        .resize-sw {
+            bottom: 0;
+            left: 0;
+            width: 15px;
+            height: 15px;
+            cursor: sw-resize;
+        }
+
+        .resize-se {
+            bottom: 0;
+            right: 0;
+            width: 15px;
+            height: 15px;
+            cursor: se-resize;
+        }
+
+        /* Edge handles */
+        .resize-n {
+            top: 0;
+            left: 15px;
+            right: 15px;
+            height: 8px;
+            cursor: n-resize;
+        }
+
+        .resize-s {
+            bottom: 0;
+            left: 15px;
+            right: 15px;
+            height: 8px;
+            cursor: s-resize;
+        }
+
+        .resize-w {
+            left: 0;
+            top: 15px;
+            bottom: 15px;
+            width: 8px;
+            cursor: w-resize;
+        }
+
+        .resize-e {
+            right: 0;
+            top: 15px;
+            bottom: 15px;
+            width: 8px;
+            cursor: e-resize;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main container that can be moved and resized -->
+    <div id="chess-container">
+        <!-- Drag handle bar -->
+        <div id="drag-handle">🎯 Drag me to move | Resize from edges/corners</div>
+        
+        <!-- URL input section -->
+        <div id="url-section">
+            <input 
+                type="text" 
+                id="url-input" 
+                placeholder="Enter Chess.com URL (e.g., https://www.chess.com/play/computer)" 
+                value="https://www.chess.com/play/computer"
+            />
+            <button id="load-btn">Load</button>
+        </div>
+
+        <!-- Quick links -->
+        <div id="quick-links">
+            <strong>Quick:</strong>
+            <a class="quick-link" data-url="https://www.chess.com/play/computer">vs Computer</a>
+            <a class="quick-link" data-url="https://www.chess.com/play/online">vs Player</a>
+            <a class="quick-link" data-url="https://www.chess.com/puzzles">Puzzles</a>
+            <a class="quick-link" data-url="https://www.chess.com/analysis">Analysis</a>
+            <a class="quick-link" data-url="https://www.chess.com/daily-chess-puzzle">Daily Puzzle</a>
+            <a class="quick-link" data-url="https://lichess.org">Lichess</a>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading">Loading...</div>
+        
+        <!-- 
+            CHESS IFRAME
+            This will load whatever URL you enter in the input box
+        -->
+        <iframe 
+            id="chess-iframe" 
+            src="https://www.chess.com/play/computer"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            allowfullscreen>
+        </iframe>
+
+        <!-- Resize handles (8 directions) -->
+        <div class="resize-handle resize-nw"></div>
+        <div class="resize-handle resize-ne"></div>
+        <div class="resize-handle resize-sw"></div>
+        <div class="resize-handle resize-se"></div>
+        <div class="resize-handle resize-n"></div>
+        <div class="resize-handle resize-s"></div>
+        <div class="resize-handle resize-w"></div>
+        <div class="resize-handle resize-e"></div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const container = document.getElementById('chess-container');
+        const dragHandle = document.getElementById('drag-handle');
+        const resizeHandles = document.querySelectorAll('.resize-handle');
+        const urlInput = document.getElementById('url-input');
+        const loadBtn = document.getElementById('load-btn');
+        const chessIframe = document.getElementById('chess-iframe');
+        const loading = document.getElementById('loading');
+        const quickLinks = document.querySelectorAll('.quick-link');
+
+        // State variables for dragging
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let containerStartX = 0;
+        let containerStartY = 0;
+
+        // State variables for resizing
+        let isResizing = false;
+        let resizeDirection = '';
+        let resizeStartX = 0;
+        let resizeStartY = 0;
+        let containerStartWidth = 0;
+        let containerStartHeight = 0;
+        let containerStartLeft = 0;
+        let containerStartTop = 0;
+
+        // Minimum container size (prevents it from becoming too small)
+        const MIN_WIDTH = 300;
+        const MIN_HEIGHT = 300;
+
+        /* 
+         * LOAD URL FUNCTION
+         */
+        function loadURL(url) {
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            // Basic URL validation
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            // Show loading indicator
+            loading.style.display = 'block';
+
+            // Load the URL
+            chessIframe.src = url;
+            urlInput.value = url;
+
+            // Hide loading after a delay
+            setTimeout(() => {
+                loading.style.display = 'none';
+            }, 1500);
+        }
+
+        // Load button click
+        loadBtn.addEventListener('click', () => {
+            loadURL(urlInput.value);
+        });
+
+        // Enter key in input
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadURL(urlInput.value);
+            }
+        });
+
+        // Quick links
+        quickLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const url = link.getAttribute('data-url');
+                loadURL(url);
+            });
+        });
+
+        /* 
+         * DRAGGING FUNCTIONALITY
+         */
+        dragHandle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            containerStartX = container.offsetLeft;
+            containerStartY = container.offsetTop;
+            e.preventDefault();
+        });
+
+        /* 
+         * RESIZING FUNCTIONALITY
+         */
+        resizeHandles.forEach(handle => {
+            handle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                resizeDirection = handle.className.split(' ')[1].replace('resize-', '');
+                resizeStartX = e.clientX;
+                resizeStartY = e.clientY;
+                containerStartWidth = container.offsetWidth;
+                containerStartHeight = container.offsetHeight;
+                containerStartLeft = container.offsetLeft;
+                containerStartTop = container.offsetTop;
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        /* 
+         * MOUSE MOVE - Handle both dragging and resizing
+         */
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                // Calculate new position
+                const deltaX = e.clientX - dragStartX;
+                const deltaY = e.clientY - dragStartY;
+                const newLeft = containerStartX + deltaX;
+                const newTop = containerStartY + deltaY;
+
+                // Keep container within viewport bounds
+                const maxLeft = window.innerWidth - container.offsetWidth;
+                const maxTop = window.innerHeight - container.offsetHeight;
+
+                container.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + 'px';
+                container.style.top = Math.max(0, Math.min(newTop, maxTop)) + 'px';
+            }
+
+            if (isResizing) {
+                const deltaX = e.clientX - resizeStartX;
+                const deltaY = e.clientY - resizeStartY;
+
+                let newWidth = containerStartWidth;
+                let newHeight = containerStartHeight;
+                let newLeft = containerStartLeft;
+                let newTop = containerStartTop;
+
+                // Handle resizing based on direction
+                if (resizeDirection.includes('e')) {
+                    newWidth = Math.max(MIN_WIDTH, containerStartWidth + deltaX);
+                }
+                if (resizeDirection.includes('w')) {
+                    newWidth = Math.max(MIN_WIDTH, containerStartWidth - deltaX);
+                    if (newWidth > MIN_WIDTH) {
+                        newLeft = containerStartLeft + deltaX;
+                    }
+                }
+                if (resizeDirection.includes('s')) {
+                    newHeight = Math.max(MIN_HEIGHT, containerStartHeight + deltaY);
+                }
+                if (resizeDirection.includes('n')) {
+                    newHeight = Math.max(MIN_HEIGHT, containerStartHeight - deltaY);
+                    if (newHeight > MIN_HEIGHT) {
+                        newTop = containerStartTop + deltaY;
+                    }
+                }
+
+                // Apply new dimensions and position
+                container.style.width = newWidth + 'px';
+                container.style.height = newHeight + 'px';
+                container.style.left = newLeft + 'px';
+                container.style.top = newTop + 'px';
+            }
+        });
+
+        /* 
+         * MOUSE UP - Stop dragging/resizing
+         */
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            isResizing = false;
+        });
+
+        // Prevent text selection while dragging
+        document.addEventListener('selectstart', (e) => {
+            if (isDragging || isResizing) {
+                e.preventDefault();
+            }
+        });
+
+        // Handle iframe load event
+        chessIframe.addEventListener('load', () => {
+            loading.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
